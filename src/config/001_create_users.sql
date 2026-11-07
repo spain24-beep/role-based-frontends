@@ -26,8 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
 
     -- Application role.
     -- New users are ordinary users unless explicitly promoted.
-    role TEXT NOT NULL DEFAULT 'user'
-        CHECK (role IN ('admin', 'user')),
+    role TEXT NOT NULL DEFAULT 'user',
 
     -- User multiplier obtained from the public spreadsheet.
     -- NULL means the spreadsheet has no multiplier value.

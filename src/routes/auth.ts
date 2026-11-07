@@ -30,6 +30,18 @@ const googleClient = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID
 );
 
+// Convert a database role into its corresponding frontend URL.
+//
+// Role names must be lowercase URL-friendly identifiers.
+// This prevents a role value from being used for path traversal.
+function getFrontendUrl(role: string): string {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(role)) {
+        throw new Error("Invalid role format for frontend routing");
+    }
+
+    return `/frontends/${role}/`;
+}
+
 
 // ---------------------------------------------------------
 // POST /api/auth/google
@@ -147,6 +159,7 @@ router.post("/google", async (req: Request, res: Response) => {
         return res.status(200).json({
             status: "authenticated",
             role: result.user.role,
+            redirectTo: getFrontendUrl(result.user.role),
             isAdmin: result.isAdmin,
             isNewUser: result.isNewUser,
 

@@ -11,9 +11,12 @@
 import pool from "../config/database";
 
 
-// Roles permitted by the database schema.
-export type UserRole = "admin" | "user";
-
+// A user has exactly one role.
+//
+// Roles are deliberately represented as strings rather than a fixed
+// TypeScript union because the application may define any number of roles.
+// The database remains the authoritative source of the user's role.
+export type UserRole = string;
 
 // Type representing a user record returned by PostgreSQL.
 //

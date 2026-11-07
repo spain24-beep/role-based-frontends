@@ -1,4 +1,5 @@
-﻿/*
+﻿
+/*
  * REQUIRE AUTHENTICATION MIDDLEWARE
  *
  * Purpose:
@@ -19,15 +20,52 @@
 import type { RequestHandler } from "express";
 import usersRepository from "../repositories/usersRepository";
 
+// Determine whether the request is asking for an HTML page.
+//
+// Browser document navigations normally identify themselves through
+// Sec-Fetch-Dest: document. The Accept header provides a fallback
+// for browsers or clients that do not send the Fetch Metadata header.
+//
+// Static assets such as JavaScript, CSS and images are not documents,
+// so they must receive an authentication error rather than login HTML.
+function isDocumentRequest(
+    headers: Record<string, string | string[] | undefined>
+): boolean {
+    const fetchDestination = headers["sec-fetch-dest"];
+
+    if (typeof fetchDestination === "string") {
+        return fetchDestination.toLowerCase() === "document";
+    }
+
+    const accept = headers.accept || "";
+
+    return (
+        typeof accept === "string" &&
+        accept.includes("text/html")
+    );
+}
 
 // Define the middleware using Express's RequestHandler type.
 // The shared Express declarations provide req.user and req.session.userId.
 const requireAuth: RequestHandler = async (req, res, next) => {
     try {
 
-        // Check whether the session contains a user ID.
-        // If it doesn't, the visitor has not authenticated.
+        // Check whether the request has an authenticated user session.
         if (!req.session.userId) {
+
+            // Redirect only browser requests for HTML documents.
+            // This sends unauthenticated visitors to the public login page
+            // without returning login HTML to JavaScript or CSS requests.
+            if (
+                req.originalUrl.startsWith("/frontends/") &&
+                isDocumentRequest(req.headers)
+            ) {
+                res.redirect(302, "/");
+                return;
+            }
+
+            // API requests and frontend asset requests need a
+            // machine-readable authentication error.
             res.status(401).json({
                 error: "Not authenticated"
             });
@@ -65,6 +103,16 @@ const requireAuth: RequestHandler = async (req, res, next) => {
                     sameSite: "lax",
                     path: "/"
                 });
+
+                // Apply the same document-versus-asset distinction
+                // when the session exists but its user no longer does.
+                if (
+                    req.originalUrl.startsWith("/frontends/") &&
+                    isDocumentRequest(req.headers)
+                ) {
+                    res.redirect(302, "/");
+                    return;
+                }
 
                 res.status(401).json({
                     error: "Not authenticated"
@@ -104,7 +152,6 @@ const requireAuth: RequestHandler = async (req, res, next) => {
         });
     }
 };
-
 
 // Export the middleware for use by protected routes.
 export default requireAuth;

@@ -60,26 +60,18 @@ window.handleGoogleCredentialResponse = async function (response) {
             throw new Error(result.error || "Authentication failed");
         }
 
-        // The backend has verified the Google identity.
-        statusElement.textContent = "Google identity verified.";
+        // The backend has verified the identity, created the session,
+        // and selected the frontend using the user's database role.
+        // Validate the returned path before navigating.
+        if (
+            typeof result.redirectTo !== "string" ||
+            !/^\/frontends\/[a-z0-9]+(?:-[a-z0-9]+)*\/$/.test(result.redirectTo)
+        ) {
+            throw new Error("Invalid frontend destination");
+        }
 
-        // Display the verified identity.
-        // textContent is used rather than innerHTML to avoid
-        // interpreting account information as HTML.
-        const name = document.createElement("p");
-        name.textContent = `Name: ${result.user.name || "Not provided"}`;
-
-        const email = document.createElement("p");
-        email.textContent = `Email: ${result.user.email}`;
-
-        // Display the internal Google Auth Starter database user ID.
-        // This is not Google's private or stable account identifier.
-        const userId = document.createElement("p");
-        userId.textContent = `Google Auth Starter User ID: ${result.user.id}`;
-
-        // Display all three identity details.
-        userDetailsElement.append(name, email, userId);
-
+        // Navigate to the frontend assigned to this user's role.
+        window.location.assign(result.redirectTo);
     } catch (error) {
         // Display a safe, understandable error message.
         statusElement.textContent = error.message;
