@@ -1,13 +1,107 @@
-<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-role" content="user">
-    <title>User</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="app-role" content="user" />
+
+    <!-- Shared application banner styling. -->
+    <link rel="stylesheet" href="/css/site-banner.css" />
+
+    <!-- Dedicated styling for the pending-assignment page. -->
+    <link rel="stylesheet" href="/css/user.css" />
+
+    <title>Account pending assignment | Disbursements</title>
+
+    <!-- Authentication must start before the banner and page scripts. -->
     <script src="/js/frontend-auth.js" defer></script>
-</head>
-<body>
-    <h1>User frontend</h1>
-</body>
+    <script src="/js/site-banner.js" defer></script>
+    <script src="/js/user.js" defer></script>
+  </head>
+
+  <body class="user-app">
+    <!-- Main application header. -->
+    <header class="user-header">
+      <div class="user-header-inner">
+        <div class="user-brand">
+          <div class="user-brand-mark" aria-hidden="true">D</div>
+
+          <div class="user-brand-text">
+            <span class="user-brand-eyebrow">New User Account</span>
+            <span class="user-brand-title">Pending Role Assignment</span>
+          </div>
+        </div>
+
+        <div class="user-header-status">
+          <span class="user-status-dot" aria-hidden="true"></span>
+          Awaiting assignment
+        </div>
+      </div>
+    </header>
+
+    <!-- Main page content. -->
+    <main class="user-main">
+      <section class="user-panel">
+        <div class="user-panel-heading">
+          <span class="user-eyebrow">ACCOUNT STATUS</span>
+
+          <span class="user-pending-badge">
+            <span class="user-status-dot" aria-hidden="true"></span>
+            Pending role assignment
+          </span>
+        </div>
+
+        <div class="user-introduction">
+          <h1>Your account is ready</h1>
+
+          <p class="user-lead">
+            Your account has been created successfully.
+          </p>
+
+          <p>
+            An administrator must review your account and assign the
+            appropriate application role before you can access your workspace.
+          </p>
+        </div>
+
+        <!-- Account details are populated by user.js. -->
+        <section id="account-details" class="user-account-details" hidden>
+          <h2>Your account details</h2>
+
+          <dl class="user-account-list">
+            <div class="user-account-row">
+              <dt>Email address</dt>
+              <dd id="account-email"></dd>
+            </div>
+
+            <div class="user-account-row">
+              <dt>Current role</dt>
+              <dd id="account-role"></dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Explains what happens next without implying user action is needed. -->
+        <div class="user-next-step">
+          <div class="user-next-step-icon" aria-hidden="true">
+            <span>i</span>
+          </div>
+
+          <div>
+            <h2>What happens next?</h2>
+
+            <p>
+              There is nothing you need to do right now. Once an administrator
+              assigns your role, reload this page and you will be directed to
+              the appropriate area of the application.
+            </p>
+          </div>
+        </div>
+
+        <p class="user-footer-note">
+          Access is managed by your application administrator.
+        </p>
+      </section>
+    </main>
+  </body>
 </html>

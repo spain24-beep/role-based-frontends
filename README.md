@@ -6,9 +6,9 @@ This repository is intended to be copied or adapted as the authentication starti
 
 ---
 
-## Part 1 — Installation guide
+# Part 1 — Installation guide
 
-### 1. What you need
+## 1. What you need
 
 Install the following:
 
@@ -20,7 +20,7 @@ Install the following:
 
 The original development environment was Windows with PowerShell.
 
-### 2. Install the project dependencies
+## 2. Install the project dependencies
 
 Open the project directory in VS Code and open its integrated PowerShell terminal.
 
@@ -39,7 +39,7 @@ code .env
 
 The `.env` file contains local credentials and configuration. It must never be committed to Git or uploaded to a public repository.
 
-### 3. Configure Google Sign-In
+## 3. Configure Google Sign-In
 
 In the Google Cloud Console:
 
@@ -61,20 +61,26 @@ Copy the generated client ID into `.env`:
 GOOGLE_CLIENT_ID=your-google-oauth-client-id
 ```
 
-The browser uses Google Identity Services to obtain a Google ID token. The backend verifies that token using Google's authentication library and checks its audience against the configured client ID.
+The browser first requests the public Google Client ID from `GET /api/config`. This endpoint is public and does not require an authenticated session.
 
-The client ID is public configuration. It is not a client secret.
+The backend reads the Client ID from its environment configuration and returns only that value in the standard API response envelope. The browser then uses Google Identity Services to obtain a Google ID token.
 
-### 4. Configure the authorised-user Google Sheet
+The browser does not read `.env` directly. The Client ID is public configuration, not a secret. The backend verifies the resulting ID token using Google's authentication library and checks its audience against the configured Client ID.
+
+Never expose the Google Client Secret through the configuration endpoint.
+
+## 4. Configure the authorised-user Google Sheet
 
 The starter uses a publicly accessible Google Sheet as an admission list for new users.
 
-The sheet must contain these exact column headings:
+The sheet must contain this exact mandatory column heading:
 
-| Email address | multiplier |
-|---|---:|
-| person@example.com | 1.25 |
-| another@example.com | |
+| Email address       | multiplier |
+| ------------------- | ---------: |
+| person@example.com  |       1.25 |
+| another@example.com |            |
+
+Only `Email address` is mandatory. `multiplier` is optional.
 
 The spreadsheet must be shared publicly with link access so that the backend can retrieve its CSV export without a Google service account.
 
@@ -90,7 +96,7 @@ The application:
 
 Existing users are looked up in the database and do not need to be admitted again through the spreadsheet.
 
-### 5. Configure PostgreSQL
+## 5. Configure PostgreSQL
 
 Create a database and two separate database accounts:
 
@@ -156,7 +162,7 @@ After the first migrations have run, the migration-history table should remain i
 REVOKE ALL ON TABLE schema_migrations FROM starter_app;
 ```
 
-### 6. Configure `.env`
+## 6. Configure `.env`
 
 Set the values for your local environment:
 
@@ -170,6 +176,7 @@ ADMIN_EMAIL=your-administrator-google-email
 GOOGLE_SHEET_URL=your-public-google-sheet-csv-export-url
 
 DB_HOST=localhost
+# Must be an integer from 1 through 65535.
 DB_PORT=5432
 DB_NAME=starter_database
 DB_USER=starter_app
@@ -195,7 +202,7 @@ Use the generated value for `SESSION_SECRET`. Use a different secret in each env
 
 Never put real credentials in `.env.example`.
 
-### 7. Run database migrations
+## 7. Run database migrations
 
 From the project root:
 
@@ -214,13 +221,23 @@ The migration runner:
 
 The application account is not used for migrations.
 
-### 8. Run the application
+## 8. Run the application
 
-Start the development server:
+Start the TypeScript compiler in watch mode:
 
 ```powershell
 npm.cmd run dev
 ```
+
+This command recompiles TypeScript when source files change. It does not start or automatically restart the Express server.
+
+In a separate terminal, start the application:
+
+```powershell
+npm.cmd start
+```
+
+After changing backend TypeScript files, allow the compiler to finish and restart the application process.
 
 The default local address is:
 
@@ -234,32 +251,42 @@ The health endpoint is:
 http://localhost:3000/health
 ```
 
-### 9. Run the automated tests
+This is the liveness endpoint. It confirms that the application process is responding; it does not check PostgreSQL.
+
+The database readiness endpoint is:
+
+```text
+http://localhost:3000/health/ready
+```
+
+## 9. Run the automated tests
 
 ```powershell
 npm.cmd test
 ```
 
-The test suite covers authentication routes, authentication service behaviour, spreadsheet parsing, authentication middleware and role middleware.
+The test suite covers authentication routes, authentication service behaviour, spreadsheet parsing, configuration routes, database port validation, database readiness, authentication middleware, role middleware, same-origin protection and error handling.
 
 Run tests after making changes to authentication, database access, middleware or configuration.
 
-### 10. Available npm scripts
+## 10. Available npm scripts
 
-| Command | Purpose |
-|---|---|
-| `npm.cmd run dev` | Start the development server with automatic restarts |
-| `npm.cmd start` | Start the application normally |
-| `npm.cmd test` | Run automated tests |
-| `npm.cmd run migrate` | Apply pending database migrations |
+| Command                 | Purpose                                                     |
+| ----------------------- | ----------------------------------------------------------- |
+| `npm.cmd run dev`       | Compile TypeScript continuously; does not start the server  |
+| `npm.cmd start`         | Start the compiled application                              |
+| `npm.cmd test`          | Build the application and run automated tests               |
+| `npm.cmd run migrate`   | Build the application and apply pending database migrations |
+| `npm.cmd run build`     | Compile TypeScript and copy SQL migration files             |
+| `npm.cmd run typecheck` | Check TypeScript without generating compiled output         |
 
 ---
 
-## Part 2 — Technical overview for AI coding agents
+# Part 2 — Technical overview for AI coding agents
 
 The following section is intended to be supplied to another AI coding agent when asking it to understand, review, extend or adapt this repository.
 
-### 1. Project identity and purpose
+## 1. Project identity and purpose
 
 This repository is a reusable Google authentication foundation for Node.js applications.
 
@@ -282,7 +309,7 @@ Do not invent or assume business functionality. The application built on top of 
 
 The current implementation contains some original project-specific naming and configuration. Treat these as customisation points when reusing the starter.
 
-### 2. Technology stack
+## 2. Technology stack
 
 - **Runtime:** Node.js
 - **Backend language:** TypeScript, compiled to JavaScript
@@ -301,11 +328,11 @@ The current implementation contains some original project-specific naming and co
 - **Build support:** A Node.js script copies SQL migration files into the compiled output directory
 - **Module system:** CommonJS
 - **Testing:** Node.js built-in test runner (`node --test`)
-- **Development:** TypeScript watch mode and Node.js watch mode for automatic compilation and server restarts
+- **Development:** TypeScript watch mode (`tsc --watch`); the Express server is started separately
 
 Do not introduce another authentication provider unless explicitly requested.
 
-### 3. Authentication flow
+## 3. Authentication flow
 
 The authentication process works as follows:
 
@@ -328,7 +355,19 @@ The Google `sub` is a stable external identity identifier. It is stored in the d
 
 The browser must never be trusted to supply its own identity, role or administrator status.
 
-### 4. User roles
+### Account lifecycle policy
+
+The application uses the following account lifecycle rules:
+
+- **Google Sheet authorisation applies to new accounts only.** A person must appear in the authorised-user Google Sheet to create an ordinary application account. Once created, their database account remains valid even if their email address is subsequently removed from the Sheet. Removing someone from the Sheet does not revoke or disable an existing account.
+
+- **ADMIN_EMAIL is an administrator bootstrap mechanism.** When a Google identity does not already have an application account, a matching ADMIN_EMAIL can be used to create the failsafe administrator account without requiring an entry in the Google Sheet. It does not continuously control administrator permissions.
+
+- **The database is authoritative for existing users and roles.** Changing ADMIN_EMAIL does not automatically promote or demote an existing account. An existing user's database role remains in force when they log in, regardless of whether their email matches the current ADMIN_EMAIL value.
+
+These rules are intentional. The Google Sheet controls initial admission, while the application database controls the ongoing status and permissions of established accounts.
+
+## 4. User roles
 
 The database currently supports two roles:
 
@@ -337,13 +376,13 @@ The database currently supports two roles:
 
 The role is stored in PostgreSQL and is authoritative.
 
-The `ADMIN_EMAIL` environment variable provides a failsafe administrator admission mechanism for the configured Google account. It is not a substitute for database role management.
+The `ADMIN_EMAIL` environment variable provides an administrator admission mechanism for the configured Google account. It is not a substitute for database role management.
 
 Other users can be promoted by changing their database role.
 
 Never trust a role value supplied by the browser.
 
-### 5. User database
+## 5. User database
 
 The `users` table includes:
 
@@ -360,7 +399,7 @@ The multiplier is optional. Blank or invalid spreadsheet values must remain `NUL
 
 The current accepted multiplier range is 0–20 inclusive.
 
-### 6. Sessions
+## 6. Sessions
 
 Sessions are stored in PostgreSQL using `connect-pg-simple`.
 
@@ -374,18 +413,18 @@ On authenticated requests, `requireAuth` retrieves the current user from Postgre
 
 The session table is created through a database migration. The running application should not need permission to create it.
 
-### 7. Security architecture
+## 7. Security architecture
 
 Important security boundaries:
 
-**Google identity**
+### Google identity
 
 - Verify ID tokens on the backend.
 - Validate the audience.
 - Require a verified email.
 - Never trust browser-supplied identity or role information.
 
-**Database**
+### Database
 
 - Use separate runtime and migration credentials.
 - The runtime account must not own the database or schema.
@@ -393,14 +432,14 @@ Important security boundaries:
 - Use parameterised SQL queries.
 - Do not expose database credentials in logs or API responses.
 
-**Sessions**
+### Sessions
 
 - Store sessions server-side.
 - Store only the internal user ID in the session.
 - Retrieve current user and role information from the database.
 - Destroy sessions on logout.
 
-**Cross-origin requests**
+### Cross-origin requests
 
 - `requireSameOrigin` validates the configured `APP_ORIGIN`.
 - Missing or foreign origins are rejected for state-changing requests.
@@ -409,7 +448,7 @@ Important security boundaries:
 
 Same-origin protection is a CSRF defence. It does not replace authentication or authorisation.
 
-**Google Sheet**
+### Google Sheet
 
 - The CSV export URL is validated.
 - Only HTTPS Google Sheets URLs are accepted.
@@ -417,11 +456,11 @@ Same-origin protection is a CSRF defence. It does not replace authentication or 
 - Column names are checked.
 - Invalid multiplier values are not silently converted into a default.
 
-### Security and configuration checklist
+## 8. Security and configuration checklist
 
 Use this checklist whenever deploying a new instance or changing its configuration.
 
-#### Secrets and environment variables
+### Secrets and environment variables
 
 - [ ] Keep `.env` local and never commit it to Git.
 - [ ] Commit only `.env.example`, containing placeholder values rather than real credentials.
@@ -430,17 +469,17 @@ Use this checklist whenever deploying a new instance or changing its configurati
 - [ ] Restrict access to production environment variables to authorised administrators.
 - [ ] If a secret is exposed, rotate it immediately. Removing it from the current file does not remove it from Git history.
 
-#### Google authentication
+### Google authentication
 
 - [ ] Use the correct Google OAuth Web Client ID for the deployment.
-- [ ] Configure the exact authorised JavaScript origins and redirect URIs in Google Cloud.
+- [ ] Configure the exact authorised JavaScript origins in Google Cloud.
 - [ ] Ensure the backend validates Google ID tokens, including their audience, signature and expiry.
 - [ ] Require Google's `email_verified` claim.
 - [ ] Never rely on frontend checks to establish a user's identity or privileges.
 - [ ] Do not use an email-domain suffix as a substitute for verified identity or explicit admission.
 - [ ] Protect `ADMIN_EMAIL` and verify that it identifies the intended administrator.
 
-#### Authorised-user Google Sheet
+### Authorised-user Google Sheet
 
 - [ ] Confirm that the configured Sheet is the intended admission list.
 - [ ] The Sheet is deliberately publicly readable by link. Do not put passwords, financial details or other sensitive information in it.
@@ -448,7 +487,7 @@ Use this checklist whenever deploying a new instance or changing its configurati
 - [ ] Verify that email addresses are entered correctly.
 - [ ] Check that multiplier values are numeric and within the application's accepted range (0–20). Blank, missing or invalid values must not silently become `1`.
 
-#### PostgreSQL
+### PostgreSQL
 
 - [ ] Use a dedicated, least-privilege runtime database account.
 - [ ] Keep the migration account separate from the runtime account.
@@ -458,7 +497,7 @@ Use this checklist whenever deploying a new instance or changing its configurati
 - [ ] Use encrypted database connections where supported by the deployment environment.
 - [ ] Configure regular database backups and periodically test restoration.
 
-#### Application and deployment
+### Application and deployment
 
 - [ ] Set `NODE_ENV=production` in production.
 - [ ] Set `APP_ORIGIN` to the exact public application origin, including the correct scheme.
@@ -471,14 +510,14 @@ Use this checklist whenever deploying a new instance or changing its configurati
 - [ ] Run the automated test suite before deployment.
 - [ ] Review dependency vulnerabilities and update dependencies regularly.
 
-#### Final release check
+### Final release check
 
 - [ ] Confirm that no `.env` file, credentials, private keys or production data are tracked by Git.
 - [ ] Review the files and changes being committed before pushing.
 - [ ] Verify the deployed application is using the intended Google OAuth client, admission Sheet and database.
 - [ ] Test login, logout, unauthorised access and administrator access after deployment.
 
-### 8. Current project structure
+## 9. Current project structure
 
 ```text
 project-root/
@@ -488,9 +527,17 @@ project-root/
 │   └── test-users.js
 ├── public/
 │   ├── css/
-│   ├── images/
-│   └── js/
-│       └── auth.js
+│   │   └── site-banner.css
+│   ├── frontends/
+│   │   ├── admin/
+│   │   │   └── index.html
+│   │   └── user/
+│   │       └── index.html
+│   ├── js/
+│   │   ├── auth.js
+│   │   ├── frontend-auth.js
+│   │   └── site-banner.js
+│   └── index.html
 ├── scripts/
 │   └── copyMigrations.js
 ├── src/
@@ -499,20 +546,28 @@ project-root/
 │   │   ├── 002_add_user_roles.sql
 │   │   ├── 003_create_user_sessions.sql
 │   │   ├── database.ts
+│   │   ├── databasePort.ts
 │   │   ├── migrationDatabase.ts
 │   │   ├── runMigrations.ts
 │   │   └── session.ts
+│   ├── controllers/
+│   │   └── authController.ts
 │   ├── integrations/
 │   │   └── google/
 │   │       └── publicSheet.ts
 │   ├── middleware/
+│   │   ├── errorHandler.ts
+│   │   ├── notFound.ts
 │   │   ├── requireAuth.ts
 │   │   ├── requireRole.ts
 │   │   └── requireSameOrigin.ts
 │   ├── repositories/
 │   │   └── usersRepository.ts
 │   ├── routes/
-│   │   └── auth.ts
+│   │   ├── adminUsers.ts
+│   │   ├── auth.ts
+│   │   ├── config.ts
+│   │   └── health.ts
 │   ├── services/
 │   │   └── authService.ts
 │   ├── types/
@@ -520,97 +575,112 @@ project-root/
 │   ├── app.ts
 │   └── server.ts
 ├── tests/
+│   ├── adminUsersRoute.test.js
+│   ├── authInputValidation.test.js
+│   ├── authLifecycle.test.js
 │   ├── authRoute.test.js
 │   ├── authService.test.js
+│   ├── configRoute.test.js
+│   ├── databasePort.test.js
+│   ├── errorHandling.test.js
+│   ├── healthRoute.test.js
 │   ├── publicSheet.test.js
 │   ├── requireAuth.test.js
-│   └── requireRole.test.js
-├── .env
+│   ├── requireRole.test.js
+│   └── requireSameOrigin.test.js
 ├── .env.example
 ├── .gitignore
+├── BOILERPLATE_COMPLETION_PLAN.md
+├── LICENSE
 ├── package.json
 ├── package-lock.json
+├── README.md
 └── tsconfig.json
 ```
 
 The `src` directory contains the TypeScript application source and SQL migration files. TypeScript is compiled into `dist`, and the build script copies the SQL migration files into the corresponding compiled directory.
 
-The `public` directory contains browser-side static assets served by Express.
+The `public` directory contains browser-side static assets served by Express. The login page is public; the role-specific frontend directories are protected by backend authentication and role checks.
+
+The `.env` file is intentionally omitted from this project tree because it contains local credentials and must not be committed to Git. `.env.example` documents the required configuration keys without containing actual credentials.
 
 The tests and manual tests remain JavaScript files and load the compiled application modules from `dist`.
 
-Some directories and capabilities may be added as the starter evolves.
+## 10. Important implementation files
 
-### 9. Important implementation files
-
-| File | Responsibility |
-|---|---|
-| `src/server.ts` | Loads environment configuration and starts Express |
-| `src/app.ts` | Configures Express middleware, static files and routes |
-| `src/routes/auth.ts` | Authentication, session restoration and logout endpoints |
-| `src/services/authService.ts` | Authentication and admission decisions |
-| `src/repositories/usersRepository.ts` | Database operations for users |
-| `src/integrations/google/publicSheet.ts` | Public Google Sheet CSV retrieval and parsing |
-| `src/config/database.ts` | Runtime PostgreSQL connection pool |
-| `src/config/migrationDatabase.ts` | Separate migration PostgreSQL connection pool |
-| `src/config/runMigrations.ts` | Ordered, transactional database migration runner |
-| `src/config/session.ts` | PostgreSQL-backed session configuration |
-| `src/middleware/requireAuth.ts` | Requires a valid authenticated user |
-| `src/middleware/requireRole.ts` | Enforces database-managed roles |
-| `src/middleware/requireSameOrigin.ts` | Validates request origin |
-| `src/types/express.d.ts` | Adds application-specific types to Express request objects |
-| `scripts/copyMigrations.js` | Copies SQL migration files into the compiled output directory |
-| `public/js/auth.js` | Browser-side Google Sign-In flow |
-| `tsconfig.json` | Configures TypeScript compilation and strict type checking |
-| `package.json` | Defines dependencies, development scripts, build, migration and test commands |
+| File                                     | Responsibility                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/server.ts`                          | Loads environment configuration and starts Express                                   |
+| `src/app.ts`                             | Configures Express middleware, static files and routes                               |
+| `src/routes/auth.ts`                     | Authentication, session restoration and logout endpoints                             |
+| `src/routes/config.ts`                   | Provides the public Google Client ID configuration                                   |
+| `src/routes/adminUsers.ts`               | Administrator user-list and user-detail endpoints                                    |
+| `src/controllers/authController.ts`      | Handles authentication requests, session restoration and logout                      |
+| `src/services/authService.ts`            | Authentication and admission decisions                                               |
+| `src/repositories/usersRepository.ts`    | Database operations for users                                                        |
+| `src/integrations/google/publicSheet.ts` | Public Google Sheet CSV retrieval and parsing                                        |
+| `src/config/database.ts`                 | Runtime PostgreSQL connection pool                                                   |
+| `src/config/migrationDatabase.ts`        | Separate migration PostgreSQL connection pool                                        |
+| `src/config/runMigrations.ts`            | Ordered, transactional database migration runner                                     |
+| `src/config/session.ts`                  | PostgreSQL-backed session configuration                                              |
+| `src/middleware/requireAuth.ts`          | Requires a valid authenticated user                                                  |
+| `src/middleware/requireRole.ts`          | Enforces database-managed roles                                                      |
+| `src/middleware/requireSameOrigin.ts`    | Validates request origin                                                             |
+| `src/types/express.d.ts`                 | Adds application-specific types to Express request objects                           |
+| `scripts/copyMigrations.js`              | Copies SQL migration files into the compiled output directory                        |
+| `public/js/auth.js`                      | Retrieves public sign-in configuration and runs the browser-side Google Sign-In flow |
+| `tsconfig.json`                          | Configures TypeScript compilation and strict type checking                           |
+| `package.json`                           | Defines dependencies, development scripts, build, migration and test commands        |
 
 The application source is TypeScript. The build process compiles it into JavaScript in `dist`, which is what Node.js executes.
 
 The JavaScript files in `tests`, `manual-tests`, `public` and `scripts` serve separate purposes and are not leftover application source files.
 
-### 10. API endpoints
+## 11. API endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/auth/google` | Verify Google ID token and establish a session |
-| `GET` | `/api/auth/me` | Return the current authenticated user |
-| `POST` | `/api/auth/logout` | Destroy the current session |
-| `GET` | `/health` | Application health check |
+| Method | Endpoint               | Purpose                                                                 |
+| ------ | ---------------------- | ----------------------------------------------------------------------- |
+| `GET`  | `/api/config`          | Return the public Google Client ID configuration                        |
+| `POST` | `/api/auth/google`     | Verify Google ID token and establish a session                          |
+| `GET`  | `/api/auth/me`         | Return the current authenticated user                                   |
+| `POST` | `/api/auth/logout`     | Destroy the current session                                             |
+| `GET`  | `/api/admin/users`     | Return a paginated administrator user list                              |
+| `GET`  | `/api/admin/users/:id` | Return an individual user to an administrator                           |
+| `GET`  | `/health`              | Application liveness check; does not query PostgreSQL                   |
+| `GET`  | `/health/ready`        | Database readiness check; returns HTTP 503 if PostgreSQL is unavailable |
 
-The `/me` endpoint and other protected endpoints must use the authentication middleware.
+`GET /api/config` is public and read-only. The authentication and administrator endpoints have their own access requirements.
 
-### 11. Tests and current baseline
+## 12. Tests and current baseline
 
-The original authentication foundation was committed after the automated test suite passed.
+The latest verified automated test run completed successfully:
 
-At the initial baseline:
-
-- 17 automated tests passed.
+- 66 automated tests passed.
 - No automated tests failed.
-- `npm audit` reported zero vulnerabilities.
-- Google login was tested successfully.
-- Session restoration and logout were tested.
-- Missing and foreign request origins were tested.
-- Runtime and migration database credentials were separated and tested.
+- The build completed successfully.
+- The test command exited with code 0.
 
-These results describe the initial development baseline, not a guarantee that future changes remain correct. Run the tests again after making changes.
+The test suite covers authentication routes, authentication service behaviour, session lifecycle, spreadsheet parsing, public configuration, administrator user routes, database port validation, database readiness, authentication middleware, role middleware, same-origin protection and error handling.
 
-### 12. Known follow-up work
+These results describe the latest verified development baseline, not a guarantee that future changes remain correct. Run the tests again after making changes.
 
-The following are possible improvements, not features that should be assumed to exist:
+A passing automated test suite does not, by itself, prove that a live Google OAuth login or production database deployment is correctly configured.
 
-- Restore the logged-in browser identity automatically after page refresh.
-- Handle simultaneous first-time logins without an unhandled duplicate-user error.
+## 13. Known follow-up work
+
+The following are known or potential improvements, not features that should be assumed to exist:
+
+- Handle simultaneous first-time logins without an unhandled duplicate-user error. This has been deferred because simultaneous first-time logins are expected to be uncommon in the initial private application.
+- Consider rejecting duplicate email addresses in the authorised-user spreadsheet rather than silently accepting the first match.
 - Review redirect behaviour when retrieving the public Google Sheet.
 - Add production deployment configuration for Cloud Run and Cloud SQL.
 - Remove original application-specific naming and make the starter fully configurable.
-- Add further automated security and integration tests.
 
 Do not implement these automatically without considering the requested task.
 
 ---
 
-## Instructions to future AI agents
+# Instructions to future AI agents
 
 When working on this repository:
 

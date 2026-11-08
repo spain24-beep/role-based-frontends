@@ -1,75 +1,72 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
     <!-- Make the page display properly on desktop and mobile. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Google Auth Starter — Sign in</title>
+    <title>Google Auth Starter â€” Sign in</title>
 
     <!-- Basic styling for our first authentication screen. -->
+    <link rel="stylesheet" href="/css/site-banner.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        margin: 0;
+        min-height: 100vh;
+        display: block;
+      }
 
-        .login-panel {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
-            width: 340px;
-            text-align: center;
-        }
+      .login-panel {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+        width: 340px;
+        margin: 80px auto;
+        text-align: center;
+      }
 
-        #google-button {
-            display: flex;
-            justify-content: center;
-            margin-top: 25px;
-        }
+      #google-button {
+        display: block;
+        justify-content: center;
+        margin-top: 25px;
+      }
 
-        #status {
-            margin-top: 25px;
-            font-size: 14px;
-            overflow-wrap: anywhere;
-        }
+      #status {
+        margin-top: 25px;
+        font-size: 14px;
+        overflow-wrap: anywhere;
+      }
 
-        #user-details {
-            margin-top: 20px;
-            text-align: left;
-            font-size: 14px;
-        }
+      #user-details {
+        margin-top: 20px;
+        text-align: left;
+        font-size: 14px;
+      }
     </style>
 
     <!-- Our browser-side authentication code. -->
+    <script src="/js/site-banner.js" defer></script>
     <script src="/js/auth.js" defer></script>
-</head>
+  </head>
 
-<body>
+  <body>
     <main class="login-panel">
+      <h1>Google Auth Starter</h1>
 
-        <h1>Google Auth Starter</h1>
+      <p>Sign in with your Google account.</p>
 
-        <p>Sign in with your Google account.</p>
+      <!-- Google will render its official sign-in button here. -->
+      <div id="google-button"></div>
 
-        <!-- Google will render its official sign-in button here. -->
-        <div id="google-button"></div>
+      <!-- Displays progress and authentication errors. -->
+      <div id="status" role="status">Loading Google sign-in...</div>
 
-        <!-- Displays progress and authentication errors. -->
-        <div id="status" role="status">
-            Loading Google sign-in...
-        </div>
-
-        <!-- Displays the verified identity returned by our backend. -->
-        <div id="user-details"></div>
-
+      <!-- Displays the verified identity returned by our backend. -->
+      <div id="user-details"></div>
     </main>
-</body>
+  </body>
 </html>

@@ -13,19 +13,20 @@ const destinationDirectory = path.join(__dirname, "..", "dist", "config");
 fs.mkdirSync(destinationDirectory, { recursive: true });
 
 // Copy only files that match the migration filename convention.
-const migrationFiles = fs.readdirSync(sourceDirectory)
-    .filter(file => /^\d+_[a-z0-9_-]+\.sql$/i.test(file))
-    .sort();
+const migrationFiles = fs
+  .readdirSync(sourceDirectory)
+  .filter((file) => /^\d+_[a-z0-9_-]+\.sql$/i.test(file))
+  .sort();
 
 if (migrationFiles.length === 0) {
-    throw new Error("No SQL migration files were found.");
+  throw new Error("No SQL migration files were found.");
 }
 
 for (const filename of migrationFiles) {
-    fs.copyFileSync(
-        path.join(sourceDirectory, filename),
-        path.join(destinationDirectory, filename)
-    );
+  fs.copyFileSync(
+    path.join(sourceDirectory, filename),
+    path.join(destinationDirectory, filename),
+  );
 
-    console.log(`[BUILD] Copied migration: ${filename}`);
+  console.log(`[BUILD] Copied migration: ${filename}`);
 }

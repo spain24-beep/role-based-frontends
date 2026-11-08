@@ -1,13 +1,278 @@
-<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-role" content="admin">
-    <title>Admin</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="app-role" content="admin" />
+    <link rel="stylesheet" href="/css/site-banner.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+    <title>Administration</title>
+
+    <!-- Authentication starts first so the banner and dashboard can share its result. -->
     <script src="/js/frontend-auth.js" defer></script>
-</head>
-<body>
-    <h1>Admin frontend</h1>
-</body>
+    <script src="/js/site-banner.js" defer></script>
+    <script src="/js/admin.js" defer></script>
+  </head>
+  <body>
+    <div class="admin-app">
+      <header class="admin-topbar">
+        <button
+          id="mobile-nav-toggle"
+          class="mobile-nav-toggle"
+          type="button"
+          aria-controls="admin-sidebar"
+          aria-expanded="false"
+        >
+          <span class="menu-icon" aria-hidden="true">&#9776;</span>
+          <span>Menu</span>
+        </button>
+
+        <div class="admin-brand">
+          <span class="admin-brand-mark" aria-hidden="true">A</span>
+          <div>
+            <p class="admin-eyebrow">WORKSPACE</p>
+            <h1>Administration</h1>
+          </div>
+        </div>
+
+        <div class="admin-topbar-label">
+          <span class="status-indicator" aria-hidden="true"></span>
+          Administrator workspace
+        </div>
+      </header>
+
+      <div class="admin-layout">
+        <aside id="admin-sidebar" class="admin-sidebar">
+          <p class="sidebar-heading">WORKSPACE</p>
+
+          <nav class="admin-navigation" aria-label="Administration">
+            <button
+              class="nav-item is-active"
+              type="button"
+              data-view="users"
+              aria-current="page"
+            >
+              <span class="nav-icon" aria-hidden="true">&#9783;</span>
+              <span>Users</span>
+            </button>
+
+            <button class="nav-item" type="button" data-view="dummy-1">
+              <span class="nav-icon" aria-hidden="true">&#9638;</span>
+              <span>Dummy 1</span>
+            </button>
+
+            <button class="nav-item" type="button" data-view="dummy-2">
+              <span class="nav-icon" aria-hidden="true">&#9635;</span>
+              <span>Dummy 2</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <span class="sidebar-footer-dot" aria-hidden="true"></span>
+            Administration console
+          </div>
+        </aside>
+
+        <main class="admin-main">
+          <div class="admin-content">
+            <section id="view-users" class="admin-view">
+              <div class="page-heading">
+                <div>
+                  <p class="admin-eyebrow">MANAGEMENT</p>
+                  <h2>Users</h2>
+                  <p class="page-description">
+                    View and manage application account information.
+                  </p>
+                </div>
+                <span class="page-tag">USER DIRECTORY</span>
+              </div>
+
+              <div class="summary-grid">
+                <article class="summary-card">
+                  <span class="summary-label">Total accounts</span>
+                  <strong id="total-users" class="summary-value">—</strong>
+                  <span class="summary-footnote">Registered accounts</span>
+                </article>
+
+                <article class="summary-card">
+                  <span class="summary-label">Accounts on this page</span>
+                  <strong id="page-users" class="summary-value">—</strong>
+                  <span class="summary-footnote">Current results</span>
+                </article>
+              </div>
+
+              <section
+                class="panel users-panel"
+                aria-labelledby="directory-title"
+              >
+                <div class="panel-heading">
+                  <div>
+                    <h3 id="directory-title">User directory</h3>
+                    <p>Search accounts and inspect their details.</p>
+                  </div>
+                  <button
+                    id="refresh-users"
+                    class="secondary-button"
+                    type="button"
+                  >
+                    <span aria-hidden="true">&#8635;</span>
+                    Refresh
+                  </button>
+                </div>
+
+                <div class="user-filters">
+                  <label class="search-field">
+                    <span class="visually-hidden">Search by email address</span>
+                    <span class="search-icon" aria-hidden="true">&#9906;</span>
+                    <input
+                      id="user-search"
+                      type="search"
+                      maxlength="200"
+                      placeholder="Search email addresses..."
+                      autocomplete="off"
+                    />
+                  </label>
+
+                  <label class="filter-field">
+                    <span class="visually-hidden">Filter by role</span>
+                    <select id="role-filter">
+                      <option value="">All roles</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div
+                  id="users-status"
+                  class="users-status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  Loading users...
+                </div>
+
+                <div class="table-scroll">
+                  <table class="users-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Full name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Multiplier</th>
+                        <th scope="col">Created</th>
+                        <th scope="col">Last login</th>
+                        <th scope="col">
+                          <span class="visually-hidden">Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                      <tr>
+                        <td colspan="7" class="table-message">
+                          Loading users...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="table-footer">
+                  <span id="pagination-summary">—</span>
+                  <div class="pagination-controls">
+                    <button
+                      id="previous-page"
+                      class="pagination-button"
+                      type="button"
+                      disabled
+                    >
+                      Previous
+                    </button>
+                    <button
+                      id="next-page"
+                      class="pagination-button"
+                      type="button"
+                      disabled
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </section>
+
+            <section
+              id="view-dummy-1"
+              class="admin-view placeholder-view"
+              hidden
+            >
+              <p class="admin-eyebrow">WORKSPACE</p>
+              <h2>Dummy 1</h2>
+              <p class="page-description">
+                This section is a placeholder for a future administration
+                module.
+              </p>
+              <div class="placeholder-panel">
+                <span class="placeholder-symbol" aria-hidden="true"
+                  >&#9638;</span
+                >
+                <h3>Coming soon</h3>
+                <p>This workspace has not been configured yet.</p>
+              </div>
+            </section>
+
+            <section
+              id="view-dummy-2"
+              class="admin-view placeholder-view"
+              hidden
+            >
+              <p class="admin-eyebrow">WORKSPACE</p>
+              <h2>Dummy 2</h2>
+              <p class="page-description">
+                This section is a placeholder for a future administration
+                module.
+              </p>
+              <div class="placeholder-panel">
+                <span class="placeholder-symbol" aria-hidden="true"
+                  >&#9635;</span
+                >
+                <h3>Coming soon</h3>
+                <p>This workspace has not been configured yet.</p>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="user-dialog" class="user-dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="admin-eyebrow">ACCOUNT INFORMATION</p>
+          <h2>User details</h2>
+        </div>
+        <button
+          id="close-user-dialog"
+          class="dialog-close"
+          type="button"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+
+      <dl id="user-detail-list" class="user-detail-list"></dl>
+
+      <div class="dialog-footer">
+        <button
+          id="dialog-cancel"
+          class="secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+        <button id="dialog-done" class="primary-button" type="button">
+          Done
+        </button>
+      </div>
+    </dialog>
+  </body>
 </html>

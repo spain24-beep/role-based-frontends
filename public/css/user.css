@@ -1,0 +1,361 @@
+/*
+ * USER DASHBOARD
+ *
+ * Purpose:
+ * Styles the account-pending-assignment page.
+ *
+ * The styles are scoped to .user-app so they cannot accidentally
+ * affect the admin dashboard or other application frontends.
+ */
+
+/* ---------------------------------------------------------
+   1. Global page styling
+   --------------------------------------------------------- */
+
+.user-app {
+  min-height: 100vh;
+  margin: 0;
+  background: #f5f7fa;
+  color: #182230;
+  font-family:
+    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Apply predictable box sizing to all elements on this page. */
+.user-app *,
+.user-app *::before,
+.user-app *::after {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------
+   2. Application header
+   --------------------------------------------------------- */
+
+.user-header {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.user-header-inner {
+  width: min(100% - 48px, 1120px);
+  min-height: 76px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.user-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.user-brand-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #173b65;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 750;
+}
+
+.user-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.user-brand-eyebrow {
+  color: #718096;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.5px;
+}
+
+.user-brand-title {
+  color: #182230;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.user-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   3. Status indicators
+   --------------------------------------------------------- */
+
+.user-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #d69e36;
+}
+
+/* ---------------------------------------------------------
+   4. Main content area
+   --------------------------------------------------------- */
+
+.user-main {
+  width: min(100% - 40px, 760px);
+  margin: 0 auto;
+  padding: 76px 0;
+}
+
+/* ---------------------------------------------------------
+   5. Main white panel
+   --------------------------------------------------------- */
+
+.user-panel {
+  padding: 40px;
+  border: 1px solid #e5eaf0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgb(24 34 48 / 4%);
+}
+
+.user-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.user-eyebrow {
+  color: #718096;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+.user-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border: 1px solid #f0e3c5;
+  border-radius: 20px;
+  background: #fffaf0;
+  color: #946c22;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* ---------------------------------------------------------
+   6. Introduction
+   --------------------------------------------------------- */
+
+.user-introduction {
+  padding: 34px 0 28px;
+}
+
+.user-introduction h1 {
+  margin: 0 0 13px;
+  color: #173b65;
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+
+.user-introduction p {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.user-introduction .user-lead {
+  color: #334155;
+  font-size: 17px;
+  font-weight: 550;
+}
+
+/* ---------------------------------------------------------
+   7. Account details
+   --------------------------------------------------------- */
+
+.user-account-details {
+  margin-top: 8px;
+  padding: 23px;
+  border: 1px solid #e5eaf0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.user-account-details[hidden] {
+  display: none;
+}
+
+.user-account-details h2 {
+  margin: 0 0 17px;
+  color: #173b65;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.user-account-list {
+  margin: 0;
+}
+
+.user-account-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid #e8edf2;
+}
+
+.user-account-row:first-child {
+  border-top: 0;
+}
+
+.user-account-row dt {
+  color: #718096;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-account-row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #263548;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   8. Next-step information
+   --------------------------------------------------------- */
+
+.user-next-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-top: 12px;
+  padding: 22px;
+  border: 1px solid #e2eaf3;
+  border-radius: 10px;
+  background: #f5f8fc;
+}
+
+.user-next-step-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2ebf5;
+  color: #173b65;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.user-next-step h2 {
+  margin: 0 0 6px;
+  color: #173b65;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.user-next-step p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ---------------------------------------------------------
+   9. Footer note
+   --------------------------------------------------------- */
+
+.user-footer-note {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #edf0f4;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------
+   10. Responsive layout
+   --------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  .user-header-inner {
+    width: calc(100% - 32px);
+    min-height: 68px;
+  }
+
+  .user-header-status {
+    font-size: 11px;
+  }
+
+  .user-main {
+    width: calc(100% - 28px);
+    padding: 32px 0;
+  }
+
+  .user-panel {
+    padding: 25px 20px;
+  }
+
+  .user-panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-introduction {
+    padding: 27px 0 22px;
+  }
+
+  .user-account-details {
+    padding: 18px;
+  }
+
+  .user-account-row {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .user-next-step {
+    padding: 17px;
+  }
+}
+
+@media (max-width: 380px) {
+  .user-brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .user-brand-title {
+    font-size: 13px;
+  }
+
+  .user-header-status {
+    font-size: 10px;
+  }
+}

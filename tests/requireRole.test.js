@@ -1,4 +1,4 @@
-﻿// Import Node.js's built-in test framework.
+// Import Node.js's built-in test framework.
 // This means we do not need to install another testing package.
 const test = require("node:test");
 
@@ -9,7 +9,6 @@ const assert = require("node:assert/strict");
 // Import the middleware we want to test.
 const requireRole = require("../dist/middleware/requireRole").default;
 
-
 // ---------------------------------------------------------
 // TEST HELPER
 //
@@ -19,33 +18,31 @@ const requireRole = require("../dist/middleware/requireRole").default;
 // ---------------------------------------------------------
 
 function createMockRequest(user) {
-    return {
-        user
-    };
+  return {
+    user,
+  };
 }
 
 function createMockResponse() {
+  // Store the HTTP status and response body so the tests
+  // can inspect what the middleware returned.
+  const response = {
+    statusCode: null,
+    body: null,
 
-    // Store the HTTP status and response body so the tests
-    // can inspect what the middleware returned.
-    const response = {
-        statusCode: null,
-        body: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
 
-        status(code) {
-            this.statusCode = code;
-            return this;
-        },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+  };
 
-        json(data) {
-            this.body = data;
-            return this;
-        }
-    };
-
-    return response;
+  return response;
 }
-
 
 // ---------------------------------------------------------
 // TEST 1: ADMIN ACCESS
@@ -54,28 +51,26 @@ function createMockResponse() {
 // ---------------------------------------------------------
 
 test("admin can access an admin-only route", () => {
+  const req = createMockRequest({
+    id: 1,
+    role: "admin",
+  });
 
-    const req = createMockRequest({
-        id: 1,
-        role: "admin"
-    });
+  const res = createMockResponse();
 
-    const res = createMockResponse();
+  // Record whether the middleware called next().
+  let nextCalled = false;
 
-    // Record whether the middleware called next().
-    let nextCalled = false;
+  const next = () => {
+    nextCalled = true;
+  };
 
-    const next = () => {
-        nextCalled = true;
-    };
+  // Execute the middleware.
+  requireRole("admin")(req, res, next);
 
-    // Execute the middleware.
-    requireRole("admin")(req, res, next);
-
-    assert.equal(nextCalled, true);
-    assert.equal(res.statusCode, null);
+  assert.equal(nextCalled, true);
+  assert.equal(res.statusCode, null);
 });
-
 
 // ---------------------------------------------------------
 // TEST 2: ORDINARY USER ACCESS
@@ -85,31 +80,33 @@ test("admin can access an admin-only route", () => {
 // ---------------------------------------------------------
 
 test("ordinary user cannot access an admin-only route", () => {
+  const req = createMockRequest({
+    id: 2,
+    role: "user",
+  });
 
-    const req = createMockRequest({
-        id: 2,
-        role: "user"
-    });
+  const res = createMockResponse();
 
-    const res = createMockResponse();
+  let nextCalled = false;
 
-    let nextCalled = false;
+  const next = () => {
+    nextCalled = true;
+  };
 
-    const next = () => {
-        nextCalled = true;
-    };
+  // Execute the admin-only middleware.
+  requireRole("admin")(req, res, next);
 
-    // Execute the admin-only middleware.
-    requireRole("admin")(req, res, next);
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 403);
 
-    assert.equal(nextCalled, false);
-    assert.equal(res.statusCode, 403);
-
-    assert.deepEqual(res.body, {
-        error: "You do not have permission to access this resource"
-    });
+  assert.deepEqual(res.body, {
+    success: false,
+    error: {
+      code: "FORBIDDEN",
+      message: "You do not have permission to access this resource",
+    },
+  });
 });
-
 
 // ---------------------------------------------------------
 // TEST 3: UNAUTHENTICATED REQUEST
@@ -119,24 +116,27 @@ test("ordinary user cannot access an admin-only route", () => {
 // ---------------------------------------------------------
 
 test("request without an authenticated user receives HTTP 401", () => {
+  const req = createMockRequest(null);
 
-    const req = createMockRequest(null);
+  const res = createMockResponse();
 
-    const res = createMockResponse();
+  let nextCalled = false;
 
-    let nextCalled = false;
+  const next = () => {
+    nextCalled = true;
+  };
 
-    const next = () => {
-        nextCalled = true;
-    };
+  // Execute the admin-only middleware.
+  requireRole("admin")(req, res, next);
 
-    // Execute the admin-only middleware.
-    requireRole("admin")(req, res, next);
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 401);
 
-    assert.equal(nextCalled, false);
-    assert.equal(res.statusCode, 401);
-
-    assert.deepEqual(res.body, {
-        error: "Not authenticated"
-    });
+  assert.deepEqual(res.body, {
+    success: false,
+    error: {
+      code: "NOT_AUTHENTICATED",
+      message: "Not authenticated",
+    },
+  });
 });

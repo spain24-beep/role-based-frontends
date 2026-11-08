@@ -1,4 +1,4 @@
-﻿/*
+/*
  * USER REPOSITORY
  *
  * Purpose:
@@ -10,141 +10,276 @@
 
 import pool from "../config/database";
 
-
-// A user has exactly one role.
-//
-// Roles are deliberately represented as strings rather than a fixed
-// TypeScript union because the application may define any number of roles.
-// The database remains the authoritative source of the user's role.
+// Roles are strings because deployed frontend directories define
+// which roles are available to the application.
 export type UserRole = string;
 
-// Type representing a user record returned by PostgreSQL.
-//
-// BIGINT and NUMERIC values are represented as strings by node-postgres
-// by default. This avoids losing precision when handling large numbers.
+// PostgreSQL BIGINT and NUMERIC values are returned as strings
+// by node-postgres to avoid JavaScript precision loss.
 export interface User {
-    id: string;
-    google_sub: string;
-    email: string;
-    role: UserRole;
-    multiplier: string | null;
-    created_at: Date;
-    updated_at: Date;
-    last_login_at: Date | null;
+  id: string;
+  google_sub: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: UserRole;
+  multiplier: string | null;
+  created_at: Date;
+  updated_at: Date;
+  last_login_at: Date | null;
 }
 
+// Shared list of database columns returned by user queries.
+const USER_COLUMNS = `
+  id, google_sub, email, first_name, last_name, role, multiplier,
+  created_at, updated_at, last_login_at
+`;
 
-// Find an existing user using Google's stable account identifier.
+// Find a user using Google's stable account identifier.
 async function findByGoogleSub(googleSub: string): Promise<User | null> {
-    const result = await pool.query<User>(
-        `SELECT id, google_sub, email, role, multiplier,
-                created_at, updated_at, last_login_at
-         FROM users
-         WHERE google_sub = $1`,
-        [googleSub]
-    );
+  const result = await pool.query<User>(
+    `SELECT ${USER_COLUMNS}
+     FROM users
+     WHERE google_sub = $1`,
+    [googleSub],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 }
 
-
-// Find an existing user using their email address.
-// Normalising the email prevents case differences from causing
-// duplicate-account or account-linking problems.
+// Find a user using their normalised email address.
 async function findByEmail(email: string): Promise<User | null> {
-    const normalisedEmail = email.trim().toLowerCase();
+  const normalisedEmail = email.trim().toLowerCase();
 
-    const result = await pool.query<User>(
-        `SELECT id, google_sub, email, role, multiplier,
-                created_at, updated_at, last_login_at
-         FROM users
-         WHERE email = $1`,
-        [normalisedEmail]
-    );
+  const result = await pool.query<User>(
+    `SELECT ${USER_COLUMNS}
+     FROM users
+     WHERE email = $1`,
+    [normalisedEmail],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 }
 
-
-// Find a user using the internal database ID.
-// This is used to retrieve the logged-in user from their session.
+// Find a user using their internal database ID.
 async function findById(userId: string): Promise<User | null> {
-    const result = await pool.query<User>(
-        `SELECT id, google_sub, email, role, multiplier,
-                created_at, updated_at, last_login_at
-         FROM users
-         WHERE id = $1`,
-        [userId]
-    );
+  const result = await pool.query<User>(
+    `SELECT ${USER_COLUMNS}
+     FROM users
+     WHERE id = $1`,
+    [userId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 }
-
 
 // Input required when creating a user.
 interface CreateUserInput {
-    googleSub: string;
-    email: string;
-
-    // Accept numbers from the Google Sheet integration,
-    // or strings when supplied by another application layer.
-    // PostgreSQL stores NUMERIC values and returns them as strings.
-    multiplier: string | number | null;
-
-    role?: UserRole;
+  googleSub: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  multiplier: string | number | null;
+  role?: UserRole;
 }
-
 
 // Create a user after the authentication service has authorised them.
 //
-// Ordinary users receive the database default role of "user".
-// The authentication service can explicitly supply "admin"
-// when creating the failsafe administrator.
+// Google names are saved only during account creation. Subsequent
+// Google logins do not overwrite administrator-edited names.
 async function createUser({
-    googleSub,
-    email,
-    multiplier,
-    role = "user"
+  googleSub,
+  email,
+  firstName,
+  lastName,
+  multiplier,
+  role = "user",
 }: CreateUserInput): Promise<User> {
-    const normalisedEmail = email.trim().toLowerCase();
+  const normalisedEmail = email.trim().toLowerCase();
+  const normalisedFirstName = firstName?.trim() || null;
+  const normalisedLastName = lastName?.trim() || null;
 
-    const result = await pool.query<User>(
-        `INSERT INTO users (google_sub, email, multiplier, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, google_sub, email, role, multiplier,
-                   created_at, updated_at, last_login_at`,
-        [googleSub, normalisedEmail, multiplier, role]
-    );
+  const result = await pool.query<User>(
+    `INSERT INTO users (
+       google_sub, email, first_name, last_name, multiplier, role
+     )
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING ${USER_COLUMNS}`,
+    [
+      googleSub,
+      normalisedEmail,
+      normalisedFirstName,
+      normalisedLastName,
+      multiplier,
+      role,
+    ],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 }
 
-
-// Record a successful login for an existing user.
-// Return the current role as well, so authentication can use
-// the database's latest permissions.
+// Record a successful login without changing names or multiplier.
 async function updateLastLogin(userId: string): Promise<User | null> {
-    const result = await pool.query<User>(
-        `UPDATE users
-         SET last_login_at = CURRENT_TIMESTAMP,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1
-         RETURNING id, google_sub, email, role, multiplier,
-                   created_at, updated_at, last_login_at`,
-        [userId]
-    );
+  const result = await pool.query<User>(
+    `UPDATE users
+     SET last_login_at = CURRENT_TIMESTAMP,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING ${USER_COLUMNS}`,
+    [userId],
+  );
 
-    return result.rows[0] ?? null;
+  return result.rows[0] ?? null;
 }
 
+// Change the database role of an existing user.
+// Permission checks belong in the administrator route.
+async function updateRole(
+  userId: string,
+  role: UserRole,
+): Promise<User | null> {
+  const result = await pool.query<User>(
+    `UPDATE users
+     SET role = $2,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING ${USER_COLUMNS}`,
+    [userId, role],
+  );
 
-// Export the repository functions for use by services and routes.
+  return result.rows[0] ?? null;
+}
+
+// Input required when an administrator edits a user's names.
+interface UpdateNamesInput {
+  firstName: string;
+  lastName: string;
+}
+
+// Update both names as one database operation.
+// Blank values are stored as NULL rather than empty strings.
+async function updateNames(
+  userId: string,
+  { firstName, lastName }: UpdateNamesInput,
+): Promise<User | null> {
+  const normalisedFirstName = firstName.trim() || null;
+  const normalisedLastName = lastName.trim() || null;
+
+  const result = await pool.query<User>(
+    `UPDATE users
+     SET first_name = $2,
+         last_name = $3,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING ${USER_COLUMNS}`,
+    [userId, normalisedFirstName, normalisedLastName],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+// Update the multiplier independently of the user's other details.
+// A null value means that no multiplier is assigned.
+async function updateMultiplier(
+  userId: string,
+  multiplier: string | null,
+): Promise<User | null> {
+  const result = await pool.query<User>(
+    `UPDATE users
+     SET multiplier = $2,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING ${USER_COLUMNS}`,
+    [userId, multiplier],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+// Options for listing users.
+interface ListUsersOptions {
+  limit: number;
+  offset: number;
+  role?: UserRole;
+  search?: string;
+}
+
+// Result of a paginated user listing.
+interface ListUsersResult {
+  users: User[];
+  total: number;
+  totalAccounts: number;
+}
+
+// Retrieve a filtered, paginated list of users.
+async function listUsers({
+  limit,
+  offset,
+  role,
+  search,
+}: ListUsersOptions): Promise<ListUsersResult> {
+  const conditions: string[] = [];
+  const values: (string | number)[] = [];
+
+  // Apply an exact role filter when requested.
+  if (role) {
+    values.push(role);
+    conditions.push(`role = $${values.length}`);
+  }
+
+  // Search email addresses without case sensitivity.
+  if (search && search.trim()) {
+    values.push(`%${search.trim()}%`);
+    conditions.push(`email ILIKE $${values.length}`);
+  }
+
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  // Count records matching the active filters.
+  const countResult = await pool.query<{ total: string }>(
+    `SELECT COUNT(*) AS total
+     FROM users
+     ${whereClause}`,
+    values,
+  );
+
+  // Count all registered accounts independently of the filters.
+  const totalAccountsResult = await pool.query<{ total: string }>(
+    `SELECT COUNT(*) AS total FROM users`,
+  );
+
+  // Add pagination values after any filter parameters.
+  const paginationValues = [...values, limit, offset];
+
+  const usersResult = await pool.query<User>(
+    `SELECT ${USER_COLUMNS}
+     FROM users
+     ${whereClause}
+     ORDER BY created_at DESC, id DESC
+     LIMIT $${values.length + 1}
+     OFFSET $${values.length + 2}`,
+    paginationValues,
+  );
+
+  return {
+    users: usersResult.rows,
+    total: Number(countResult.rows[0].total),
+    totalAccounts: Number(totalAccountsResult.rows[0].total),
+  };
+}
+
+// Export the repository functions for use by other application layers.
 const usersRepository = {
-    findByGoogleSub,
-    findByEmail,
-    findById,
-    createUser,
-    updateLastLogin
+  findByGoogleSub,
+  findByEmail,
+  findById,
+  createUser,
+  updateLastLogin,
+  updateRole,
+  updateNames,
+  updateMultiplier,
+  listUsers,
 };
 
 export default usersRepository;

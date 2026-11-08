@@ -1,0 +1,64 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="app-role" content="dummy1" />
+
+    <link rel="stylesheet" href="/css/site-banner.css" />
+    <link rel="stylesheet" href="/css/dummy1.css" />
+
+    <title>Dummy 1 Dashboard</title>
+
+    <!-- Shared authentication must run before page-specific scripts. -->
+    <script src="/js/frontend-auth.js" defer></script>
+    <script src="/js/site-banner.js" defer></script>
+    <script src="/js/dummy1.js" defer></script>
+  </head>
+
+  <body>
+    <main class="dashboard">
+      <section class="welcome-panel">
+        <p class="eyebrow">DISBURSEMENTS · TEST FRONTEND</p>
+        <h1>Dummy 1 Dashboard</h1>
+        <p>
+          This is a test frontend used to verify authentication,
+          database role recognition and frontend routing.
+        </p>
+      </section>
+
+      <section id="verification-panel" class="verification-panel" hidden>
+        <h2>Authentication successful</h2>
+        <p id="verification-message">
+          Your account has been authenticated and routed successfully.
+        </p>
+
+        <div class="account-details">
+          <div class="account-detail">
+            <span class="detail-label">Name</span>
+            <span id="account-name" class="detail-value"></span>
+          </div>
+
+          <div class="account-detail">
+            <span class="detail-label">Email</span>
+            <span id="account-email" class="detail-value"></span>
+          </div>
+
+          <div class="account-detail">
+            <span class="detail-label">Database role</span>
+            <span id="account-role" class="detail-value"></span>
+          </div>
+
+          <div class="account-detail">
+            <span class="detail-label">Frontend</span>
+            <span class="detail-value">dummy1</span>
+          </div>
+        </div>
+
+        <p class="success-message">
+          The dummy1 frontend is working.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

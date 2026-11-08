@@ -1,4 +1,4 @@
-﻿// Import Node.js's built-in testing framework.
+// Import Node.js's built-in testing framework.
 const test = require("node:test");
 
 // Import strict assertions for checking expected results.
@@ -10,7 +10,6 @@ const Module = require("node:module");
 
 // Keep a reference to Node's original module loader.
 const originalRequire = Module.prototype.require;
-
 
 // ---------------------------------------------------------
 // DATABASE REPOSITORY MOCK
@@ -24,23 +23,21 @@ let mockUser = null;
 let mockDatabaseError = null;
 
 const mockUsersRepository = {
-    async findById(userId) {
-
-        // Simulate a database error when a test requests it.
-        if (mockDatabaseError) {
-            throw mockDatabaseError;
-        }
-
-        // Return the test user only when the requested ID matches.
-        if (mockUser && String(mockUser.id) === String(userId)) {
-            return mockUser;
-        }
-
-        // Simulate a user who no longer exists.
-        return null;
+  async findById(userId) {
+    // Simulate a database error when a test requests it.
+    if (mockDatabaseError) {
+      throw mockDatabaseError;
     }
-};
 
+    // Return the test user only when the requested ID matches.
+    if (mockUser && String(mockUser.id) === String(userId)) {
+      return mockUser;
+    }
+
+    // Simulate a user who no longer exists.
+    return null;
+  },
+};
 
 // ---------------------------------------------------------
 // TEMPORARILY REPLACE THE REPOSITORY IMPORT
@@ -50,12 +47,11 @@ const mockUsersRepository = {
 // ---------------------------------------------------------
 
 Module.prototype.require = function (request) {
+  if (request === "../repositories/usersRepository") {
+    return mockUsersRepository;
+  }
 
-    if (request === "../repositories/usersRepository") {
-        return mockUsersRepository;
-    }
-
-    return originalRequire.apply(this, arguments);
+  return originalRequire.apply(this, arguments);
 };
 
 // Load the middleware while the repository mock is active.
@@ -65,41 +61,38 @@ const requireAuth = require("../dist/middleware/requireAuth").default;
 // The mock is now held by the middleware's imported reference.
 Module.prototype.require = originalRequire;
 
-
 // ---------------------------------------------------------
 // EXPRESS REQUEST / RESPONSE TEST HELPERS
 // ---------------------------------------------------------
 
 function createMockRequest(userId = null) {
-    return {
-        session: userId
-            ? { userId }
-            : {}
-    };
+  return {
+    originalUrl: "/",
+    session: userId ? { userId } : {},
+  };
 }
 
 function createMockResponse() {
+  return {
+    statusCode: null,
+    body: null,
+    clearedCookie: null,
 
-    return {
-        statusCode: null,
-        body: null,
-        clearedCookie: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
 
-        status(code) {
-            this.statusCode = code;
-            return this;
-        },
+    json(data) {
+      this.body = data;
+      return this;
+    },
 
-        json(data) {
-            this.body = data;
-            return this;
-        },
-
-        clearCookie(name, options) {
-            this.clearedCookie = { name, options };
-            return this;
-        }
-    };
+    clearCookie(name, options) {
+      this.clearedCookie = { name, options };
+      return this;
+    },
+  };
 }
 
 // ---------------------------------------------------------
@@ -109,27 +102,29 @@ function createMockResponse() {
 // ---------------------------------------------------------
 
 test("request without a session receives HTTP 401", async () => {
+  mockUser = null;
+  mockDatabaseError = null;
 
-    mockUser = null;
-    mockDatabaseError = null;
+  const req = createMockRequest();
+  const res = createMockResponse();
 
-    const req = createMockRequest();
-    const res = createMockResponse();
+  let nextCalled = false;
 
-    let nextCalled = false;
+  await requireAuth(req, res, () => {
+    nextCalled = true;
+  });
 
-    await requireAuth(req, res, () => {
-        nextCalled = true;
-    });
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 401);
 
-    assert.equal(nextCalled, false);
-    assert.equal(res.statusCode, 401);
-
-    assert.deepEqual(res.body, {
-        error: "Not authenticated"
-    });
+  assert.deepEqual(res.body, {
+    success: false,
+    error: {
+      code: "NOT_AUTHENTICATED",
+      message: "Not authenticated",
+    },
+  });
 });
-
 
 // ---------------------------------------------------------
 // TEST 2: VALID SESSION
@@ -139,29 +134,28 @@ test("request without a session receives HTTP 401", async () => {
 // ---------------------------------------------------------
 
 test("valid session retrieves user and calls next", async () => {
+  mockDatabaseError = null;
 
-    mockDatabaseError = null;
+  mockUser = {
+    id: 42,
+    email: "test@example.com",
+    role: "admin",
+    multiplier: null,
+  };
 
-    mockUser = {
-        id: 42,
-        email: "test@example.com",
-        role: "admin",
-        multiplier: null
-    };
+  const req = createMockRequest(42);
+  const res = createMockResponse();
 
-    const req = createMockRequest(42);
-    const res = createMockResponse();
+  let nextCalled = false;
 
-    let nextCalled = false;
+  await requireAuth(req, res, () => {
+    nextCalled = true;
+  });
 
-    await requireAuth(req, res, () => {
-        nextCalled = true;
-    });
-
-    assert.equal(nextCalled, true);
-    assert.equal(req.user.id, 42);
-    assert.equal(req.user.role, "admin");
-    assert.equal(res.statusCode, null);
+  assert.equal(nextCalled, true);
+  assert.equal(req.user.id, 42);
+  assert.equal(req.user.role, "admin");
+  assert.equal(res.statusCode, null);
 });
 
 // ---------------------------------------------------------
@@ -173,40 +167,40 @@ test("valid session retrieves user and calls next", async () => {
 // ---------------------------------------------------------
 
 test("session for a deleted user is destroyed and rejected", async () => {
+  // Simulate a user who cannot be found in PostgreSQL.
+  mockUser = null;
+  mockDatabaseError = null;
 
-    // Simulate a user who cannot be found in PostgreSQL.
-    mockUser = null;
-    mockDatabaseError = null;
+  const req = createMockRequest(999);
+  const res = createMockResponse();
 
-    const req = createMockRequest(999);
-    const res = createMockResponse();
+  // Simulate Express successfully destroying the session.
+  let sessionDestroyed = false;
 
-    // Simulate Express successfully destroying the session.
-    let sessionDestroyed = false;
+  req.session.destroy = (callback) => {
+    sessionDestroyed = true;
+    callback(null);
+  };
 
-    req.session.destroy = (callback) => {
-        sessionDestroyed = true;
-        callback(null);
-    };
+  let nextCalled = false;
 
-    let nextCalled = false;
+  await requireAuth(req, res, () => {
+    nextCalled = true;
+  });
 
-    await requireAuth(req, res, () => {
-        nextCalled = true;
-    });
+  assert.equal(sessionDestroyed, true);
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 401);
 
-    assert.equal(sessionDestroyed, true);
-    assert.equal(nextCalled, false);
-    assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, {
+    success: false,
+    error: {
+      code: "NOT_AUTHENTICATED",
+      message: "Not authenticated",
+    },
+  });
 
-    assert.deepEqual(res.body, {
-        error: "Not authenticated"
-    });
-
-    assert.equal(
-        res.clearedCookie.name,
-        "google_auth_starter.sid"
-    );
+  assert.equal(res.clearedCookie.name, "google_auth_starter.sid");
 });
 
 // ---------------------------------------------------------
@@ -217,28 +211,31 @@ test("session for a deleted user is destroyed and rejected", async () => {
 // ---------------------------------------------------------
 
 test("database failure prevents access and returns HTTP 500", async () => {
+  mockUser = null;
 
-    mockUser = null;
+  // Simulate PostgreSQL returning an error.
+  mockDatabaseError = new Error("Simulated database failure");
 
-    // Simulate PostgreSQL returning an error.
-    mockDatabaseError = new Error("Simulated database failure");
+  const req = createMockRequest(42);
+  const res = createMockResponse();
 
-    const req = createMockRequest(42);
-    const res = createMockResponse();
+  let nextCalled = false;
 
-    let nextCalled = false;
+  await requireAuth(req, res, () => {
+    nextCalled = true;
+  });
 
-    await requireAuth(req, res, () => {
-        nextCalled = true;
-    });
+  assert.equal(nextCalled, false);
+  assert.equal(res.statusCode, 500);
 
-    assert.equal(nextCalled, false);
-    assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, {
+    success: false,
+    error: {
+      code: "AUTHENTICATION_VERIFICATION_FAILED",
+      message: "Could not verify authentication",
+    },
+  });
 
-    assert.deepEqual(res.body, {
-        error: "Could not verify authentication"
-    });
-
-    // Reset the mock so it cannot affect subsequent tests.
-    mockDatabaseError = null;
+  // Reset the mock so it cannot affect subsequent tests.
+  mockDatabaseError = null;
 });
